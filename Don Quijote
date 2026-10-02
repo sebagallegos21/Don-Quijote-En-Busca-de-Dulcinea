@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Don Quijote: En Busca de Dulcinea</title>
+<style>
+:root{
+  --parchment:#f3e6c8; --brown:#5c3a21; --brown-dark:#3a2414;
+  --gold:#c8963e; --red:#8c2f2f; --green:#4a6b3a; --blue:#3a5b7c;
+  --ink:#2b1d10;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --parchment:#2a2018; --ink:#eadfc8; }
+}
+:root[data-theme="dark"]{ --parchment:#2a2018; --ink:#eadfc8; }
+*{box-sizing:border-box;}
+html,body{height:100%;margin:0;}
+body{
+  font-family:'Georgia','Palatino Linotype',serif;
+  background:linear-gradient(160deg,#e9d9ad,#c9ab6f 60%,#a9834c);
+  color:var(--ink);
+  min-height:100%;
+  padding:env(safe-area-inset-top,0) 16px env(safe-area-inset-bottom,0);
+  display:flex; flex-direction:column; align-items:center;
+}
+h1{ text-align:center; font-size:clamp(1.3rem,4vw,2.1rem); color:var(--brown-dark);
+  text-shadow:1px 1px 0 #fff6dd; margin:14px 0 4px; letter-spacing:1px;}
+.sub{color:var(--brown); margin-bottom:10px; font-style:italic; text-align:center;}
+.card{background:var(--parchment); border:3px solid var(--brown); border-radius:16px;
+  box-shadow:0 8px 24px rgba(0,0,0,.35); padding:20px; width:100%; max-width:480px; margin-bottom:16px;}
+.card h2{margin-top:0; color:var(--brown-dark); border-bottom:2px solid var(--gold); padding-bottom:6px;}
+label{display:block; margin:10px 0 4px; font-weight:bold; color:var(--brown-dark);}
+input[type=text],input[type=number]{width:100%; padding:8px 10px; border-radius:8px; border:2px solid var(--brown);
+  background:#fffaf0; font-size:1rem; color:var(--ink);}
+button{
+  font-family:inherit; cursor:pointer; border:none; border-radius:10px; padding:10px 18px;
+  font-size:1rem; font-weight:bold; background:linear-gradient(180deg,var(--gold),#a06f24);
+  color:#fff8e6; box-shadow:0 3px 0 #6b4b16; transition:transform .08s;
+}
+button:active{transform:translateY(2px); box-shadow:0 1px 0 #6b4b16;}
+button.secondary{background:linear-gradient(180deg,#8a8a8a,#5a5a5a); box-shadow:0 3px 0 #333;}
+button:disabled{opacity:.5; cursor:not-allowed;}
+#playerRows div{display:flex; gap:8px; margin-bottom:6px; align-items:center;}
+#playerRows span{width:22px; text-align:center;}
+#game{display:none; width:100%; max-width:760px; flex-direction:column; align-items:center;}
+#boardWrap{position:relative; width:min(92vw,520px); height:min(92vw,520px); margin:8px auto;}
+#board{position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle,#e8d19b,#b9924f 85%);
+  border:4px solid var(--brown-dark); box-shadow:inset 0 0 30px rgba(0,0,0,.4);}
+.space{position:absolute; width:86px; height:86px; margin:-43px 0 0 -43px; border-radius:14px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+  font-size:.62rem; font-weight:bold; color:#fff; padding:4px; border:2px solid rgba(0,0,0,.4);
+  box-shadow:0 2px 6px rgba(0,0,0,.3); line-height:1.05;}
+.space .ic{font-size:1.3rem;}
+.space.active{outline:3px solid #fff; outline-offset:2px; animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.3)}}
+#center{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; width:44%;}
+#center .quill{font-size:2.4rem;}
+.tokens{position:absolute; display:flex; gap:2px; flex-wrap:wrap; width:40px; justify-content:center; margin-top:46px;}
+.token{width:14px; height:14px; border-radius:50%; border:1px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.5);}
+#hud{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; width:100%; margin:8px 0;}
+.pchip{background:var(--parchment); border:2px solid var(--brown); border-radius:10px; padding:6px 10px; font-size:.85rem;}
+.pchip.turn{outline:3px solid var(--gold); background:#fff3d6; color:#2b1d10;}
+.pchip b{display:block;}
+#controls{display:flex; gap:12px; align-items:center; justify-content:center; flex-wrap:wrap; margin:10px 0;}
+#die{width:56px;height:56px;border-radius:12px;background:#fff8e6;border:3px solid var(--brown-dark);
+  display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:bold;color:var(--brown-dark);
+  box-shadow:0 3px 0 #6b4b16;}
+#log{width:100%; max-width:520px; max-height:110px; overflow-y:auto; background:rgba(255,255,255,.4);
+  border:2px solid var(--brown); border-radius:10px; padding:8px 10px; font-size:.82rem; color:#2b1d10;}
+#log div{margin-bottom:3px;}
+#modalOverlay{position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:center;
+  justify-content:center; z-index:50; padding:16px;}
+#qModal,#endModal{background:var(--parchment); border:3px solid var(--brown-dark); border-radius:16px;
+  max-width:440px; width:100%; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,.5);}
+#qLoc{color:var(--brown); font-style:italic; margin:0 0 6px;}
+#timerBar{height:8px; background:#ddd; border-radius:4px; overflow:hidden; margin:8px 0;}
+#timerFill{height:100%; background:var(--red); width:100%; transition:width 1s linear;}
+.opt{display:block; width:100%; text-align:left; background:#fff8e6; color:#2b1d10; border:2px solid var(--brown);
+  margin:6px 0; padding:9px 12px; border-radius:8px;}
+.opt:hover{background:#ffe9bd;}
+.opt.correct{background:#bfe3ab !important; border-color:var(--green);}
+.opt.wrong{background:#eab3b3 !important; border-color:var(--red);}
+#feedback{font-weight:bold; min-height:22px; margin-top:6px;}
+.hidden{display:none !important;}
+footer{color:var(--brown-dark); opacity:.75; font-size:.75rem; margin:10px 0 20px; text-align:center;}
+</style>
+</head>
+<body>
+<h1>⚔️ Don Quijote: En Busca de Dulcinea</h1>
+<p class="sub">Recorre el camino del ingenioso hidalgo y conquista el corazón de Dulcinea</p>
+
+<div class="card" id="setup">
+  <h2>Preparación del juego</h2>
+  <label for="numP">Número de jugadores (2-4)</label>
+  <input type="number" id="numP" min="2" max="4" value="3">
+  <button id="genRows" class="secondary">Definir nombres</button>
+  <div id="playerRows"></div>
+  <button id="startBtn" style="margin-top:14px;width:100%">🐎 Comenzar aventura</button>
+</div>
+
+<div id="game">
+  <div id="hud"></div>
+  <div id="boardWrap"><div id="board"></div><div id="center"><div class="quill">🖋️</div><div style="font-size:.8rem">Ambientado al estilo<br>del Quijote</div></div></div>
+  <div id="controls">
+    <div id="die">🎲</div>
+    <button id="rollBtn">Lanzar dado</button>
+    <div id="turnInfo" style="font-weight:bold;"></div>
+  </div>
+  <div id="log"></div>
+</div>
+
+<div id="modalOverlay">
+  <div id="qModal" class="hidden">
+    <p id="qLoc"></p>
+    <h3 id="qText"></h3>
+    <div id="timerBar"><div id="timerFill"></div></div>
+    <div id="opts"></div>
+    <div id="feedback"></div>
+    <button id="skipBtn" class="secondary">Pasar turno (sin responder)</button>
+  </div>
+  <div id="endModal" class="hidden" style="text-align:center;">
+    <h2 id="endTitle">🏆 ¡Fin de la aventura!</h2>
+    <div id="endBody"></div>
+    <button id="restartBtn" style="margin-top:12px;">Jugar de nuevo</button>
+  </div>
+</div>
+
+<footer>Basado en "Don Quijote: En Busca de Dulcinea" · Juega con clic/tacto o teclado (1-4 para responder, Espacio para lanzar el dado)</footer>
+
+<script>
+const SPACES = [
+ {name:"Playa de Barcelona (Inicio)", ic:"🌊", color:"var(--blue)"},
+ {name:"Casa del Quijote", ic:"🏠", color:"var(--brown)"},
+ {name:"Primera Venta", ic:"🍺", color:"var(--red)"},
+ {name:"Caminos de La Mancha", ic:"🌾", color:"var(--green)"},
+ {name:"Librería de Alonso Quijano", ic:"📚", color:"var(--blue)"},
+ {name:"Molinos del Mago", ic:"🌬️", color:"#7a5a3a"},
+ {name:"El Toboso", ic:"🏘️", color:"var(--red)"},
+ {name:"Venta del Manteo", ic:"🧵", color:"var(--brown)"},
+ {name:"Matorral de los Rebaños", ic:"🐑", color:"var(--green)"},
+ {name:"El Palacio de los Duques", ic:"🏰", color:"var(--gold)"},
+];
+const QBANK = {
+ "Playa de Barcelona (Inicio)":[["¿En qué ciudad desembarca Don Quijote y vive su aventura final antes de volver?",["Barcelona","Sevilla","Toledo","Cádiz"],0],["¿Qué mar recorre la costa donde se sitúa Barcelona en la obra?",["Mediterráneo","Cantábrico","Atlántico","Egeo"],0]],
+ "Casa del Quijote":[["¿Cómo se llamaba realmente Don Quijote antes de armarse caballero?",["Alonso Quijano","Sancho Panza","Cardenio","Gines de Pasamonte"],0],["¿Qué afición desmedida enloquece a Alonso Quijano?",["Los libros de caballerías","La poesía","La caza","La música"],0]],
+ "Primera Venta":[["¿Con qué confunde Don Quijote a la primera venta que visita?",["Un castillo","Una iglesia","Un molino","Una biblioteca"],0],["¿Quién lo arma caballero en la venta?",["El ventero","Un cura","Sancho","El barbero"],0]],
+ "Caminos de La Mancha":[["¿En qué región transcurre gran parte de las aventuras?",["La Mancha","Andalucía","Cataluña","Galicia"],0],["¿Qué monta Don Quijote en sus viajes?",["Rocinante","Babieca","Clavileño","Platero"],0]],
+ "Librería de Alonso Quijano":[["¿Quiénes queman parte de la biblioteca de Don Quijote?",["El cura y el barbero","Sancho y el ama","Dulcinea y su sobrina","Los duques"],0],["¿Qué género de libros posee principalmente su biblioteca?",["Libros de caballerías","Libros de cocina","Tratados de guerra","Poesía amorosa"],0]],
+ "Molinos del Mago":[["¿Con qué confunde Don Quijote a los molinos de viento?",["Gigantes","Ejércitos","Castillos","Dragones"],0],["¿A quién culpa Don Quijote de transformar a los gigantes en molinos?",["Al mago Frestón","A Merlín","A Dulcinea","Al cura"],0]],
+ "El Toboso":[["¿De qué pueblo es natural Dulcinea?",["El Toboso","Argamasilla","Ocaña","Ruidera"],0],["¿Cuál es el verdadero nombre de la campesina que inspira a Dulcinea?",["Aldonza Lorenzo","Teresa Panza","Maritornes","Altisidora"],0]],
+ "Venta del Manteo":[["¿Qué burla sufre Sancho Panza en una venta?",["Es manteado en una manta","Es coronado rey","Es nombrado gobernador","Es armado caballero"],0],["¿Quién suele acompañar y servir de escudero a Don Quijote?",["Sancho Panza","Cardenio","Sansón Carrasco","Ginés de Pasamonte"],0]],
+ "Matorral de los Rebaños":[["¿Con qué confunde Don Quijote a un rebaño de ovejas?",["Dos ejércitos enemigos","Un castillo encantado","Un grupo de gigantes","Una procesión religiosa"],0],["¿Qué anima a Don Quijote a atacar el rebaño?",["Su imaginación caballeresca","Un consejo de Sancho","Una orden real","El hambre"],0]],
+ "El Palacio de los Duques":[["¿Quiénes reciben con burlas a Don Quijote y Sancho en su palacio?",["Los Duques","Los Reyes","Los Curas","Los Molineros"],0],["¿Qué le prometen a Sancho en el palacio como broma?",["El gobierno de una ínsula","Un caballo mágico","Un tesoro","La mano de una duquesa"],0]],
+};
+const COLORS=["#c0392b","#2980b9","#27ae60","#8e44ad","#d68910","#16a085","#7f8c8d","#e91e8c","#34495e"];
+
+let players=[], order=[], turnIdx=0, dieVal=1, boardR, curSpaceIdx=[];
+const LAPS_TO_WIN=5;
+const genRowsBtn=document.getElementById('genRows');
+function genRows(clampField){
+  const numInput=document.getElementById('numP');
+  let n=parseInt(numInput.value)||2;
+  n=Math.max(2,Math.min(4,n));
+  if(clampField) numInput.value=n;
+  const prev={};
+  document.querySelectorAll('#playerRows input').forEach((inp,i)=>{ prev[i]=inp.value; });
+  const rows=document.getElementById('playerRows'); rows.innerHTML='';
+  for(let i=0;i<n;i++){
+    const d=document.createElement('div');
+    d.innerHTML=`<span style="color:${COLORS[i]}">●</span><input type="text" placeholder="Jugador ${i+1}" id="pn${i}">`;
+    rows.appendChild(d);
+    if(prev[i]) document.getElementById('pn'+i).value=prev[i];
+  }
+}
+genRowsBtn.onclick=()=>genRows(true);
+document.getElementById('numP').addEventListener('input',()=>genRows(false));
+document.getElementById('numP').addEventListener('change',()=>genRows(true));
+document.getElementById('numP').addEventListener('blur',()=>genRows(true));
+genRows(true);
+
+document.getElementById('startBtn').onclick=()=>{
+  const n=Math.max(2,Math.min(4,parseInt(document.getElementById('numP').value)||3));
+  players=[];
+  for(let i=0;i<n;i++){
+    const val=(document.getElementById('pn'+i)||{}).value;
+    players.push({name:(val&&val.trim())||('Jugador '+(i+1)), color:COLORS[i], score:0, pos:0, laps:0, finished:false});
+  }
+  order=[...Array(n).keys()]; turnIdx=0;
+  document.getElementById('setup').style.display='none';
+  document.getElementById('game').style.display='flex';
+  buildBoard(); renderHUD(); log(`¡La aventura comienza! Turno de ${players[order[0]].name}.`); updateTurnInfo();
+};
+
+function buildBoard(){
+  const board=document.getElementById('board');
+  board.innerHTML='';
+  const wrap=document.getElementById('boardWrap');
+  const size=wrap.getBoundingClientRect().width || 500;
+  boardR=size/2-50;
+  SPACES.forEach((s,i)=>{
+    const ang=(i/SPACES.length)*2*Math.PI - Math.PI/2;
+    const x=size/2 + boardR*Math.cos(ang);
+    const y=size/2 + boardR*Math.sin(ang);
+    const el=document.createElement('div');
+    el.className='space'; el.id='sp'+i;
+    el.style.left=x+'px'; el.style.top=y+'px'; el.style.background=s.color;
+    el.innerHTML=`<div class="ic">${s.ic}</div><div>${s.name}</div><div class="tokens" id="tok${i}"></div>`;
+    board.appendChild(el);
+  });
+  placeTokens();
+}
+function placeTokens(){
+  SPACES.forEach((_,i)=>{ document.getElementById('tok'+i).innerHTML=''; });
+  players.forEach(p=>{
+    const t=document.createElement('div'); t.className='token'; t.style.background=p.color;
+    document.getElementById('tok'+p.pos).appendChild(t);
+  });
+}
+function renderHUD(){
+  const hud=document.getElementById('hud'); hud.innerHTML='';
+  players.forEach((p,i)=>{
+    const c=document.createElement('div'); c.className='pchip'+(order[turnIdx]===i?' turn':'');
+    c.innerHTML=`<b style="color:${p.color}">${p.name}</b>Puntos: ${p.score} · Vueltas: ${p.laps}`;
+    hud.appendChild(c);
+  });
+}
+function updateTurnInfo(){
+  document.getElementById('turnInfo').textContent = `Turno: ${players[order[turnIdx]].name}`;
+}
+function log(msg){
+  const l=document.getElementById('log'); const d=document.createElement('div'); d.textContent=msg; l.prepend(d);
+}
+function currentPlayer(){ return players[order[turnIdx]]; }
+function nextTurn(){
+  turnIdx=(turnIdx+1)%order.length;
+  renderHUD(); updateTurnInfo();
+}
+
+document.getElementById('rollBtn').onclick=rollDice;
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space' && !document.getElementById('rollBtn').disabled && document.getElementById('qModal').classList.contains('hidden') && document.getElementById('game').style.display==='flex'){
+    e.preventDefault(); rollDice();
+  }
+  if(!document.getElementById('qModal').classList.contains('hidden')){
+    const n=parseInt(e.key);
+    if(n>=1 && n<=4){ const btns=document.querySelectorAll('#opts .opt'); if(btns[n-1]) btns[n-1].click(); }
+  }
+});
+
+function rollDice(){
+  const p=currentPlayer();
+  if(p.finished){ nextTurn(); return; }
+  document.getElementById('rollBtn').disabled=true;
+  let ticks=0; const spin=setInterval(()=>{ dieVal=1+Math.floor(Math.random()*6); document.getElementById('die').textContent=dieVal; ticks++; if(ticks>8){ clearInterval(spin); movePlayer(p,dieVal);} },70);
+}
+function movePlayer(p,steps){
+  let i=0;
+  const step=()=>{
+    if(i<steps){
+      p.pos=(p.pos+1)%SPACES.length;
+      if(p.pos===0){
+        p.laps++;
+        log(`✨ ${p.name} completa la vuelta ${p.laps} (¡pasa por la Playa de Barcelona!)`);
+        if(!window._lapWinner || !window._lapWinner[p.laps]){
+          window._lapWinner = window._lapWinner || {};
+          window._lapWinner[p.laps]=p.name;
+          p.score++; log(`🎁 ${p.name} es el primero en completar la vuelta ${p.laps}: +1 punto bonus.`);
+        }
+      }
+      placeTokens(); renderHUD();
+      i++; setTimeout(step,220);
+    } else {
+      landOn(p);
+    }
+  };
+  step();
+}
+function landOn(p){
+  const idx=p.pos;
+  const sname=SPACES[idx].name;
+  document.getElementById('sp'+idx).classList.add('active');
+  askQuestion(p, sname, ()=>{ document.getElementById('sp'+idx).classList.remove('active'); afterTurnCheck(p); });
+}
+function afterTurnCheck(p){
+  if(p.laps>=LAPS_TO_WIN && !p.finished){
+    p.finished=true;
+    if(!window._raceWinner){
+      window._raceWinner=p.name; p.score++; log(`🏁 ${p.name} es el primero en completar ${LAPS_TO_WIN} vueltas: +1 punto bonus y termina el juego.`);
+    }
+    endGame();
+    return;
+  }
+  renderHUD();
+  document.getElementById('rollBtn').disabled=false;
+  nextTurn();
+}
+function askQuestion(p, loc, done){
+  const bank=QBANK[loc];
+  window._usedQ=window._usedQ||{};
+  let used=window._usedQ[loc]||[];
+  if(used.length>=bank.length) used=[];
+  const avail=bank.map((_,i)=>i).filter(i=>!used.includes(i));
+  const qi=avail[Math.floor(Math.random()*avail.length)];
+  used.push(qi); window._usedQ[loc]=used;
+  const q0=bank[qi];
+  const shuf=a=>{ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+  const n=q0[1].length;
+  if(!window._posBag||!window._posBag.length){
+    let bag; do{ bag=shuf([...Array(n).keys()]); }while(window._lastPos!==undefined && bag[bag.length-1]===window._lastPos);
+    window._posBag=bag;
+  }
+  const target=window._posBag.pop(); window._lastPos=target;
+  const wrong=shuf(q0[1].filter((_,i)=>i!==q0[2]));
+  const opts4=[]; let w=0;
+  for(let i=0;i<n;i++) opts4.push(i===target?q0[1][q0[2]]:wrong[w++]);
+  const q=[q0[0], opts4, target];
+  document.getElementById('qLoc').textContent=`${p.name} — ${loc}`;
+  document.getElementById('qText').textContent=q[0];
+  const optsDiv=document.getElementById('opts'); optsDiv.innerHTML='';
+  const fb=document.getElementById('feedback'); fb.textContent='';
+  let answered=false;
+  q[1].forEach((opt,oi)=>{
+    const b=document.createElement('button'); b.className='opt'; b.textContent=`${oi+1}. ${opt}`;
+    b.onclick=()=>{
+      if(answered) return; answered=true; clearInterval(timerInt);
+      document.querySelectorAll('#opts .opt').forEach((el,k)=>{ el.disabled=true; if(k===q[2]) el.classList.add('correct'); });
+      if(oi===q[2]){ p.score++; fb.textContent='✅ ¡Correcto! +1 punto.'; fb.style.color='var(--green)'; }
+      else { p.score--; b.classList.add('wrong'); fb.textContent='❌ Incorrecto. -1 punto.'; fb.style.color='var(--red)'; }
+      log(`${p.name} respondió en ${loc}: ${oi===q[2]?'correcto (+1)':'incorrecto (-1)'}`);
+      setTimeout(closeModal,1200);
+    };
+    optsDiv.appendChild(b);
+  });
+  document.getElementById('skipBtn').onclick=()=>{
+    if(answered) return; answered=true; clearInterval(timerInt);
+    log(`${p.name} pasó su turno en ${loc} sin responder.`);
+    closeModal();
+  };
+  let t=30; document.getElementById('timerFill').style.width='100%';
+  const timerInt=setInterval(()=>{
+    t--; document.getElementById('timerFill').style.width=(t/30*100)+'%';
+    if(t<=0){ clearInterval(timerInt); if(!answered){ answered=true; p.score--; fb.textContent='⏰ ¡Tiempo agotado! -1 punto.'; fb.style.color='var(--red)';
+      document.querySelectorAll('#opts .opt').forEach(el=>el.disabled=true);
+      log(`${p.name} agotó el tiempo en ${loc}: -1 punto.`);
+      setTimeout(closeModal,1200); } }
+  },1000);
+  function closeModal(){
+    document.getElementById('modalOverlay').style.display='none';
+    document.getElementById('qModal').classList.add('hidden');
+    done();
+  }
+  document.getElementById('modalOverlay').style.display='flex';
+  document.getElementById('qModal').classList.remove('hidden');
+}
+function endGame(){
+  document.getElementById('rollBtn').disabled=true;
+  const sorted=[...players].sort((a,b)=>b.score-a.score);
+  const winner=sorted[0];
+  const body=document.getElementById('endBody');
+  body.innerHTML = `<p style="font-size:1.1rem;">👑 <b style="color:${winner.color}">${winner.name}</b> conquista el corazón de Dulcinea con <b>${winner.score}</b> puntos.</p>` +
+    '<ol style="text-align:left;">' + sorted.map(p=>`<li><span style="color:${p.color}">${p.name}</span>: ${p.score} pts · ${p.laps} vueltas</li>`).join('') + '</ol>';
+  document.getElementById('modalOverlay').style.display='flex';
+  document.getElementById('endModal').classList.remove('hidden');
+}
+document.getElementById('restartBtn').onclick=()=>location.reload();
+window.addEventListener('resize',()=>{ if(document.getElementById('game').style.display==='flex') buildBoard(); });
+</script>
+</body>
+</html>
